@@ -7,8 +7,11 @@
     Date: 15.03.2017
 """
 
+from __future__ import unicode_literals
+
 import argparse
 import re
+from time import time
 
 import pandas as pd
 
@@ -24,14 +27,16 @@ XML_TEMPLATE = '''
 
 CONTACT_TEMPLATE = '''
 <contact>
-    <category />
+    <category>0</category>
     <person>
         <realName>{name}</realName>
     </person>
     {telephony}
     <services />
     <setup />
-    <uniqueid>{id}</uniqueid>
+    <features doorphone="0" />
+    <mod_time>{mod_time}</mod_time>
+    <uniqueid>{unique_id}</uniqueid>
 </contact>
 '''
 
@@ -59,18 +64,22 @@ def gmail2fritzbox(in_path, out_path):
     xml = XML_TEMPLATE.format(contacts='\n'.join(xml_contacts))
 
     with open(out_path, 'w') as f:
-        f.write(xml)
+        f.write(xml.encode('utf-8'))
 
 
 def contact2xml(entry):
     numbers = []
     id, name = entry[0:2]
+    if type(name) == str:
+        name = name.decode('utf-8')
+        name = name.replace('&', 'u.')
     for i in range(4):
         numbers.append(entry[(i + 1) * 2:(i + 2) * 2])
     return CONTACT_TEMPLATE.format(
         name=name,
         telephony=numbers2xml(numbers),
-        id=id,
+        unique_id=id + 50,
+        mod_time=int(time()),
     )
 
 
@@ -91,7 +100,7 @@ def numbers2xml(numbers):
 
 def number2xml(number, ntype, id):
     return NUMBER_TEMPLATE.format(
-        type=ntype,
+        type=ntype.lower(),
         number=number,
         id=id,
         prio=1 if id == 0 else 0,
@@ -102,12 +111,13 @@ def clean_numbers(numbers):
     cleaned_numbers = []
     for ntype, number in numbers:
         if type(ntype) == str:
+            # there can be additional chars and text, remove that stuff
+            number = re.sub('[^0123456789()+:]', '', number)
+
             # For some reason gmail sometimes exports two numbers separated by
             # three colons. Separate them and treat them as different numbers.
             split_numbers = number.split(' ::: ')
             for n in split_numbers:
-                # there can be additional chars and text, remove that stuff
-                n = re.sub('[^0123456789()+]', '', n)
                 # remove the country prefix if any
                 n = rm_prefix('+49', n)
                 cleaned_numbers.append((ntype, n))
