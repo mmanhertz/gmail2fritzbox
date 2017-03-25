@@ -17,8 +17,7 @@ import pandas as pd
 
 COUNTRY_PREFIX = '+49'  # Germany
 
-XML_TEMPLATE = '''
-<?xml version="1.0" encoding="utf-8"?>
+XML_TEMPLATE = '''<?xml version="1.0" encoding="utf-8"?>
 <phonebooks>
     <phonebook>
         {contacts}
