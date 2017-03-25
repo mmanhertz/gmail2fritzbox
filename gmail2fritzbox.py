@@ -15,6 +15,7 @@ from time import time
 
 import pandas as pd
 
+COUNTRY_PREFIX = '+49'  # Germany
 
 XML_TEMPLATE = '''
 <?xml version="1.0" encoding="utf-8"?>
@@ -116,18 +117,20 @@ def clean_numbers(numbers):
 
             # For some reason gmail sometimes exports two numbers separated by
             # three colons. Separate them and treat them as different numbers.
-            split_numbers = number.split(' ::: ')
+            split_numbers = number.split(':::')
             for n in split_numbers:
                 # remove the country prefix if any
-                n = rm_prefix('+49', n)
+                n = make_sure_national_number_starts_with_zero(n)
                 cleaned_numbers.append((ntype, n))
     return cleaned_numbers
 
 
-def rm_prefix(prefix, txt):
-    if txt.startswith(prefix):
-        return txt[len(prefix):]
-    return txt
+def make_sure_national_number_starts_with_zero(number):
+    if number.startswith(COUNTRY_PREFIX):
+        return number.replace(COUNTRY_PREFIX, '0', 1)
+    if number.startswith('+') or number.startswith('0'):
+        return number
+    return '0' + number
 
 
 if __name__ == '__main__':
